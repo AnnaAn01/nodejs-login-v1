@@ -9,6 +9,40 @@ const db = mysql.createConnection({
   database: process.env.DATABASE,
 });
 
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).render("login", {
+        message: "Please provide an email and password",
+      });
+    }
+
+    db.query(
+      "SELECT * FROM users WHERE EMAIL = ?",
+      [email],
+      async (error, results) => {
+        console.log(results);
+        if (
+          !results ||
+          !(await bcrypt.compare(password, results[0].password))
+        ) {
+          res.status(401).render("login", {
+            message: "Email or password is incorrect",
+          });
+        } else {
+          const id = results[0].id;
+          const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 exports.register = (req, res) => {
   const { name, email, password, passwordConfirm } = req.body;
   console.log(req.body);
