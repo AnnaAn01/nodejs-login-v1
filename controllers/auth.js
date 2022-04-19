@@ -1,6 +1,7 @@
 const mysql = require("mysql");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { promisify } = require("util");
 
 const db = mysql.createConnection({
   host: process.env.DATABASE_HOST,
@@ -102,4 +103,18 @@ exports.register = (req, res) => {
   );
 
   // res.send("Form Submitted");
+};
+
+exports.isLoggedIn = async (req, res, next) => {
+  console.log(req.cookies);
+  if (req.cookies.jwt) {
+    try {
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET
+      );
+    } catch (error) {}
+  }
+
+  next();
 };
