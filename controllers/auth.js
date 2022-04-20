@@ -109,12 +109,40 @@ exports.isLoggedIn = async (req, res, next) => {
   console.log(req.cookies);
   if (req.cookies.jwt) {
     try {
+      // Step 1 - Verify the token
       const decoded = await promisify(jwt.verify)(
         req.cookies.jwt,
         process.env.JWT_SECRET
       );
-    } catch (error) {}
-  }
+      console.log(decoded);
+      // Step 2 - Check if the user still exists
+      db.query(
+        "SELECT * FROM users WHERE id = ?",
+        [decoded.id],
+        (error, result) => {
+          console.log(result);
 
-  next();
+          if (!result) {
+            return next();
+          }
+          req.user = result[0];
+          return next();
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      return next();
+    }
+  } else {
+    next();
+  }
+};
+
+exports.logout = async (req, res) => {
+  res.cookie("jwt", "logout", {
+    expires: new Date(Date.now() + 2 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).redirect("/");
 };
